@@ -1,7 +1,11 @@
 {
   "cleanUrls": true,
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/api/memories/:id", "destination": "/api/memories/[id]" }
   ]
 }
-

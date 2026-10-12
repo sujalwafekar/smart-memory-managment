@@ -9,6 +9,9 @@ const {
   mockExtractMemories
 } = require('./_store');
 
+const DEFAULT_NEMOTRON_KEY = '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';
+const DEFAULT_KIMI_KEY = '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';
+
 function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
   return new Promise((resolve, reject) => {
     if (!apiKey || !apiKey.trim()) {
@@ -34,7 +37,7 @@ function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
         'Authorization': `Bearer ${cleanKey}`,
         'Content-Length': Buffer.byteLength(postData)
       },
-      timeout: 9000
+      timeout: 15000
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -67,21 +70,28 @@ function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
   });
 }
 
-async function extractMemoriesWithAi(apiUrl, apiKey, userMessage) {
+async function extractMemoriesSmart(apiUrl, apiKey, userMessage) {
+  // First run fast 0ms heuristic extractor
+  const heuristic = mockExtractMemories(userMessage);
+  if (heuristic && heuristic.length > 0) {
+    return heuristic;
+  }
+
+  // If message doesn't match heuristic patterns, ask AI
   if (!apiKey || !userMessage) return [];
   const systemPrompt = `You are a cognitive memory extraction system.
-Analyze the user's message to identify if they shared any long-term personal facts, tech stack choices, preferences, desires/goals, or completed milestones.
+Analyze the user's message to identify if they shared any personal facts, tech stack choices, preferences, desires, or milestones.
 Rules:
-1. If the user states a personal preference, technical choice, goal, decision, or fact about themselves/their project (e.g., "I decided to use PostgreSQL", "i want to use supa base now", "I love dark mode", "We use Docker"): classify as type "SEMANTIC", importance between 1.0 and 5.0, with content written in third person starting with "User ...".
-2. If the user states a completed achievement, milestone, or past event (e.g., "I finished the auth module", "I participated in a hackathon"): classify as type "EPISODIC", importance between 1.0 and 5.0, with content written in third person starting with "User ...".
-3. If the user message is just a general question, greeting, or contains NO facts about the user/project: return an empty JSON array [].
-4. Output STRICTLY a valid JSON array of objects with keys: "type" (string: "SEMANTIC" or "EPISODIC"), "content" (string), "importance" (number). Do NOT include markdown code blocks or explanations.`;
+1. If the user states a personal preference, technical choice, goal, decision, or fact about themselves/their project (e.g. "I decided to use PostgreSQL", "i want to use supabase now", "I love dark mode", "We use Docker"): classify as type "SEMANTIC", importance between 1.0 and 5.0, with content written in third person starting with "User ...".
+2. If the user states a completed achievement or milestone (e.g. "I finished the auth module"): classify as type "EPISODIC", importance between 1.0 and 5.0, with content starting with "User ...".
+3. If the user message is just a general question with NO facts about the user: return an empty JSON array [].
+4. Output STRICTLY a valid JSON array of objects with keys: "type" ("SEMANTIC" or "EPISODIC"), "content", "importance". Do NOT include explanations.`;
 
   try {
     const raw = await callNvidiaModel(apiUrl, apiKey, 'nvidia/nemotron-3.5-lightning-30b-a3b', [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
-    ], { max_tokens: 300, temperature: 0.1 });
+    ], { max_tokens: 200, temperature: 0.1 });
 
     const start = raw.indexOf('[');
     const end = raw.lastIndexOf(']');
@@ -96,10 +106,10 @@ Rules:
       }
     }
   } catch (err) {
-    console.warn('AI memory extraction failed, using heuristic fallback:', err.message);
+    console.warn('AI memory extraction fallback:', err.message);
   }
 
-  return mockExtractMemories(userMessage);
+  return [];
 }
 
 async function generateAnswerWithFallback(apiUrl, keyNemotron, keyKimi, prompt, question, selectedMemories) {
@@ -108,11 +118,10 @@ async function generateAnswerWithFallback(apiUrl, keyNemotron, keyKimi, prompt, 
     { role: 'user', content: prompt }
   ];
 
-  // Verified fast and reliable model chain
   const models = [
-    { model: 'nvidia/nemotron-3.5-lightning-30b-a3b', key: keyNemotron, params: { temperature: 0.7, max_tokens: 800 } },
-    { model: 'nvidia/nemotron-3-ultra-550b-a55b', key: keyNemotron, params: { temperature: 0.7, max_tokens: 800 } },
-    { model: 'moonshotai/kimi-k3', key: keyKimi, params: { temperature: 0.7, max_tokens: 800 } }
+    { model: 'nvidia/nemotron-3.5-lightning-30b-a3b', key: keyNemotron, params: { temperature: 0.7, max_tokens: 500 } },
+    { model: 'nvidia/nemotron-3-ultra-550b-a55b', key: keyNemotron, params: { temperature: 0.7, max_tokens: 500 } },
+    { model: 'moonshotai/kimi-k3', key: keyKimi, params: { temperature: 0.7, max_tokens: 500 } }
   ];
 
   for (const item of models) {
@@ -123,7 +132,7 @@ async function generateAnswerWithFallback(apiUrl, keyNemotron, keyKimi, prompt, 
         return response.trim();
       }
     } catch (err) {
-      console.warn(`Model ${item.model} failed: ${err.message}`);
+      console.warn(`Model ${item.model} error: ${err.message}`);
     }
   }
 
@@ -150,12 +159,12 @@ module.exports = async function handler(req, res) {
   const question = message.trim();
 
   const apiUrl = process.env.NVIDIA_API_URL || 'https://integrate.api.nvidia.com/v1/chat/completions';
-  const keyNemotron = (process.env.NVIDIA_API_KEY_NEMOTRON || '').trim();
-  const keyKimi = (process.env.NVIDIA_API_KEY_KIMI || '').trim();
+  const keyNemotron = (process.env.NVIDIA_API_KEY_NEMOTRON || DEFAULT_NEMOTRON_KEY).trim();
+  const keyKimi = (process.env.NVIDIA_API_KEY_KIMI || DEFAULT_KIMI_KEY).trim();
   const primaryKey = keyNemotron || keyKimi;
 
-  // 1. AI-Driven memory extraction (detect facts, tech choices, desires, preferences, milestones)
-  const extracted = await extractMemoriesWithAi(apiUrl, primaryKey, question);
+  // 1. Memory extraction
+  const extracted = await extractMemoriesSmart(apiUrl, primaryKey, question);
   const existingMemories = getMemories();
   const learnedMemories = [];
 
