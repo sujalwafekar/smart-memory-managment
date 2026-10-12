@@ -115,29 +115,94 @@ $('#memoryForm').addEventListener('submit',async event => {
   } catch(error) {$('#memoryError').textContent=error.message;}
   finally {$('#saveMemory').disabled=false;}
 });
-function scrollDown() {thread.scrollTop = thread.scrollHeight;}
-function appendMessage(role,text,relevant = [], learned = []) {
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  // 1. Code blocks: ```lang ... ```
+  let out = text.replace(/```([a-z0-9_-]*)\n([\s\S]*?)```/gi, (match, lang, code) => {
+    return `<div class="code-block"><div class="code-header">${escapeHtml(lang || 'code')}</div><pre><code>${escapeHtml(code.trim())}</code></pre></div>`;
+  });
+
+  // 2. Inline code: `...`
+  out = out.replace(/`([^`]+)`/g, (match, code) => `<code class="inline-code">${escapeHtml(code)}</code>`);
+
+  // 3. Headings: ###, ##, #
+  out = out.replace(/^### (.*$)/gim, '<h4 class="chat-h4">$1</h4>');
+  out = out.replace(/^## (.*$)/gim, '<h3 class="chat-h3">$1</h3>');
+  out = out.replace(/^# (.*$)/gim, '<h2 class="chat-h2">$1</h2>');
+
+  // 4. Bold and Italic: **bold**, *italic*
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // 5. Unordered lists: lines starting with - or *
+  out = out.replace(/(?:^[-*]\s+.+(?:\n|$))+/gm, (listBlock) => {
+    const items = listBlock.trim().split(/\n/).map(line => {
+      const content = line.replace(/^[-*]\s+/, '');
+      return `<li>${content}</li>`;
+    }).join('');
+    return `<ul class="chat-list">${items}</ul>`;
+  });
+
+  // 6. Split into paragraphs
+  const chunks = out.split(/\n{2,}/).map(chunk => {
+    const trimmed = chunk.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('<div class="code-block"') ||
+        trimmed.startsWith('<h2') ||
+        trimmed.startsWith('<h3') ||
+        trimmed.startsWith('<h4') ||
+        trimmed.startsWith('<ul')) {
+      return trimmed;
+    }
+    return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+  }).filter(Boolean);
+
+  return chunks.join('');
+}
+
+function scrollDown() {
+  requestAnimationFrame(() => {
+    thread.scrollTop = thread.scrollHeight;
+  });
+}
+
+function appendMessage(role, text, relevant = [], learned = []) {
   welcome?.remove();
-  const row = make('div',`message-row ${role}`);
-  if (role==='assistant') row.append(make('div','message-avatar','✳'));
-  const bubble=make('div','message-bubble');
-  bubble.append(make('p','',text));
-  if (role==='assistant') {
+  const row = make('div', `message-row ${role}`);
+  if (role === 'assistant') row.append(make('div', 'message-avatar', '✳'));
+  const bubble = make('div', 'message-bubble');
+
+  if (role === 'assistant') {
+    const contentDiv = make('div', 'message-content');
+    contentDiv.innerHTML = renderMarkdown(text);
+    bubble.append(contentDiv);
+
     if (learned && learned.length) {
       const learnedBox = make('div', 'learned-memories-box');
-      learnedBox.append(make('strong', '', '🧠 Auto-extracted Memory: '));
-      learned.forEach(lm => {
-        learnedBox.append(make('span', 'learned-pill', lm));
-      });
+      learnedBox.innerHTML = `
+        <div class="learned-label">🧠 Auto-extracted Memory:</div>
+        <div class="learned-pills-wrap">
+          ${learned.map(lm => `<span class="learned-pill">${escapeHtml(lm)}</span>`).join('')}
+        </div>
+      `;
       bubble.append(learnedBox);
     }
-    const note=make('div','message-meta');
-    note.append(document.createTextNode(`${relevant.length} relevant ${relevant.length===1?'memory':'memories'} selected · AI · `));
-    const link=make('a','','View reasoning trace ↗');
-    link.href='/backend-explainer/';
+
+    const note = make('div', 'message-meta');
+    note.append(document.createTextNode(`${relevant.length} relevant ${relevant.length === 1 ? 'memory' : 'memories'} selected · AI · `));
+    const link = make('a', '', 'View reasoning trace ↗');
+    link.href = '/backend-explainer/';
     note.append(link);
     bubble.append(note);
+  } else {
+    const p = make('p', '', text);
+    bubble.append(p);
   }
+
   row.append(bubble);
   thread.append(row);
   scrollDown();
