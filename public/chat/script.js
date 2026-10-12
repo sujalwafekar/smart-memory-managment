@@ -162,6 +162,23 @@ chatForm.addEventListener('submit',async event=>{
     const response=await apiFetch('/api/chat',{method:'POST',body:JSON.stringify({message})});
     pending.remove();
     appendMessage('assistant', response.answer ?? 'No response received.', response.relevantMemories ?? [], response.learnedMemories ?? []);
+    if (response.learnedMemories && response.learnedMemories.length) {
+      for (const item of response.learnedMemories) {
+        const match = item.match(/^\[(.*?)\]\s*(.*)$/);
+        if (match) {
+          const type = match[1];
+          const content = match[2];
+          if (!memories.some(m => m.content.toLowerCase() === content.toLowerCase())) {
+            try {
+              await apiFetch('/api/memories', {
+                method: 'POST',
+                body: JSON.stringify({ type, content, importance: 2.5 })
+              });
+            } catch (_) {}
+          }
+        }
+      }
+    }
     await loadMemories();
   } catch(error) {
     pending.remove();
