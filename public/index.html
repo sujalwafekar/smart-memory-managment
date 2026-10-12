@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#19382c"><meta name="description" content="SmartChat adds relevant memories to your AI conversations — a simple memory manager built with Spring Boot and MySQL.">
+<title>SmartChat — AI that remembers what matters</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="page">
+  <header class="nav wrap">
+    <a class="brand" href="/" aria-label="SmartChat home"><span class="brand-mark">✦</span> smartchat<span class="brand-period">.</span></a>
+    <nav aria-label="Main navigation"><a href="#about">About</a><a href="#features">Features</a><a href="#how">How it works</a><a href="/backend-explainer/">Behind the scenes</a></nav>
+    <a class="nav-cta" href="/chat/">Try SmartChat <span aria-hidden="true">↗</span></a>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner wrap">
+        <p class="eyebrow"><span class="green-dot"></span> THE MEMORY LAYER FOR AI</p>
+        <h1 id="hero-title">An AI assistant<br>that remembers<br><em>what matters.</em></h1>
+        <p class="hero-lead">Better conversations begin with context. SmartChat keeps the useful details from your past chats and brings them back when you need them.</p>
+        <div class="hero-actions"><a class="btn primary" href="/chat/">Open live demo <span>↗</span></a><a class="btn light" href="#how">Explore how it works <span>↓</span></a></div>
+      </div>
+      <div class="hero-proof wrap"><span><b>◈</b> Context, not clutter</span><span><b>◉</b> Explainable retrieval</span><span><b>⌘</b> Built with Spring Boot + MySQL</span></div>
+    </section>
+
+    <section id="about" class="intro section wrap">
+      <div class="section-kicker">01 / THE PROBLEM</div>
+      <div class="intro-grid"><div><h2>Great answers need<br><em>great context.</em></h2><p class="section-text">Most AI APIs only see what you send with each request. Without a memory layer, information from earlier conversations has to be supplied again.</p><a class="text-link" href="/backend-explainer/">See the difference <span>↗</span></a></div>
+      <div class="example-card"><div class="example-top"><span class="example-icon">✳</span><span>Without memory</span><span class="tag muted">Generic</span></div><div class="bubble yours">How should I implement authentication?</div><div class="bubble reply">What technologies are you using?</div><div class="example-divider"></div><div class="example-top"><span class="example-icon green">✦</span><span>With SmartChat</span><span class="tag">Contextual</span></div><div class="bubble reply improved">Since you're using React and Firebase, start with Firebase Authentication.</div></div></div>
+    </section>
+
+    <section class="story section wrap" id="features"><div class="photo-wrap"><img src="/assets/story-photo.jpg" alt="Person working thoughtfully at a sunlit desk" loading="lazy"><div class="floating-note"><span class="float-icon">✦</span><b>Your context,<br>right when you need it.</b></div></div><div class="story-copy"><div class="section-kicker">02 / THE SOLUTION</div><h2>More thoughtful AI.<br><em>Less repetition.</em></h2><p class="section-text">Save useful facts, retrieve matching memories, and pass only the relevant details into each prompt. Every selected memory has a traceable reason.</p><div class="feature-list"><div><span>01</span><div><h3>Persistent memories</h3><p>Keep semantic facts, episodic events, and working context in MySQL.</p></div></div><div><span>02</span><div><h3>Relevance-first retrieval</h3><p>Rank memories by keyword matches, type, and importance.</p></div></div><div><span>03</span><div><h3>Transparent by design</h3><p>See the scored memories and exact context passed to the AI layer.</p></div></div></div><a class="text-link" href="/chat/">Try it for yourself <span>↗</span></a></div></section>
+
+    <section class="process section" id="how"><div class="wrap"><div class="section-kicker">03 / UNDER THE HOOD</div><div class="process-head"><h2>Simple technology.<br><em>Smarter conversations.</em></h2><p>A four-step system that makes every memory decision easy to understand and explain.</p></div><div class="steps"><article><div class="step-icon">⌕</div><span class="number">01</span><h3>Ask</h3><p>Send a question like you would in any chatbot.</p></article><article><div class="step-icon">▤</div><span class="number">02</span><h3>Retrieve</h3><p>Search stored memories for matching ideas.</p></article><article><div class="step-icon">▥</div><span class="number">03</span><h3>Rank</h3><p>Score the candidates and select only the relevant ones.</p></article><article><div class="step-icon">✳</div><span class="number">04</span><h3>Respond</h3><p>Build context for the AI layer and answer.</p></article></div></div></section>
+
+    <section class="closing section wrap"><p class="section-kicker">A LITTLE MEMORY GOES A LONG WAY</p><h2>Less explaining.<br><em>More doing.</em></h2><p>Give the memory manager a question and see exactly what it remembers.</p><div class="hero-actions"><a class="btn primary" href="/chat/">Launch the demo ↗</a><a class="btn light" href="/backend-explainer/">View backend trace ↗</a></div></section>
+  </main>
+  <footer class="wrap footer"><a href="/" class="brand">✦ smartchat<span class="brand-period">.</span></a><span>Built with HTML, CSS, JavaScript, Spring Boot &amp; MySQL.</span><a href="/chat/">Start chatting ↗</a></footer>
+</div>
+</body></html>

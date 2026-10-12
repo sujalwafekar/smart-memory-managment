@@ -1,0 +1,6 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/memories/:id", "destination": "/api/memories/[id]" }
+  ]
+}

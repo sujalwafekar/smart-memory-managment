@@ -1,0 +1,9 @@
+target/
+.idea/
+.vscode/
+*.iml
+.env
+.env.local
+.env.*.local
+.vercel
+node_modules/
