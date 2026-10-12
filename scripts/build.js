@@ -23,3 +23,4 @@ function copyDir(src, dest) {
 console.log('Copying static files from src/main/resources/static to public...');
 copyDir(srcDir, destDir);
 console.log('Build static assets completed successfully.');
+

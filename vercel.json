@@ -4,3 +4,4 @@
     { "source": "/api/memories/:id", "destination": "/api/memories/[id]" }
   ]
 }
+
