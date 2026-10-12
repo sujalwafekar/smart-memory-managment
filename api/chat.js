@@ -11,14 +11,16 @@ const {
 
 function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
   return new Promise((resolve, reject) => {
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       return reject(new Error('No API key provided'));
     }
+    const cleanKey = apiKey.trim();
     const url = new URL(apiUrl);
     const postData = JSON.stringify({
       model,
       messages,
       stream: false,
+      chat_template_kwargs: { enable_thinking: false },
       ...extraParams
     });
 
@@ -29,10 +31,10 @@ function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${cleanKey}`,
         'Content-Length': Buffer.byteLength(postData)
       },
-      timeout: 15000
+      timeout: 9000
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -40,14 +42,17 @@ function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
         if (res.statusCode === 200) {
           try {
             const json = JSON.parse(data);
-            const content = json.choices?.[0]?.message?.content;
-            if (content) return resolve(content);
-            reject(new Error('Empty choices in API response'));
+            const msg = json.choices?.[0]?.message;
+            const content = msg?.content || msg?.reasoning_content;
+            if (content && content.trim()) {
+              return resolve(content.trim());
+            }
+            reject(new Error('Empty content in API response'));
           } catch (e) {
             reject(e);
           }
         } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+          reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 150)}`));
         }
       });
     });
@@ -62,16 +67,52 @@ function callNvidiaModel(apiUrl, apiKey, model, messages, extraParams = {}) {
   });
 }
 
-async function generateAnswerWithFallback(apiUrl, keyKimi, keyNemotron, prompt, question, selectedMemories) {
+async function extractMemoriesWithAi(apiUrl, apiKey, userMessage) {
+  if (!apiKey || !userMessage) return [];
+  const systemPrompt = `You are a cognitive memory extraction system.
+Analyze the user's message to identify if they shared any long-term personal facts, tech stack choices, preferences, desires/goals, or completed milestones.
+Rules:
+1. If the user states a personal preference, technical choice, goal, decision, or fact about themselves/their project (e.g., "I decided to use PostgreSQL", "i want to use supa base now", "I love dark mode", "We use Docker"): classify as type "SEMANTIC", importance between 1.0 and 5.0, with content written in third person starting with "User ...".
+2. If the user states a completed achievement, milestone, or past event (e.g., "I finished the auth module", "I participated in a hackathon"): classify as type "EPISODIC", importance between 1.0 and 5.0, with content written in third person starting with "User ...".
+3. If the user message is just a general question, greeting, or contains NO facts about the user/project: return an empty JSON array [].
+4. Output STRICTLY a valid JSON array of objects with keys: "type" (string: "SEMANTIC" or "EPISODIC"), "content" (string), "importance" (number). Do NOT include markdown code blocks or explanations.`;
+
+  try {
+    const raw = await callNvidiaModel(apiUrl, apiKey, 'nvidia/nemotron-3.5-lightning-30b-a3b', [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ], { max_tokens: 300, temperature: 0.1 });
+
+    const start = raw.indexOf('[');
+    const end = raw.lastIndexOf(']');
+    if (start !== -1 && end !== -1 && end > start) {
+      const parsed = JSON.parse(raw.substring(start, end + 1));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(item => ({
+          type: (item.type || 'SEMANTIC').toUpperCase(),
+          content: item.content,
+          importance: Number(item.importance) || 2.0
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn('AI memory extraction failed, using heuristic fallback:', err.message);
+  }
+
+  return mockExtractMemories(userMessage);
+}
+
+async function generateAnswerWithFallback(apiUrl, keyNemotron, keyKimi, prompt, question, selectedMemories) {
   const messages = [
     { role: 'system', content: 'You are SmartChat, an intelligent AI assistant. Use the provided user context to tailor your response.' },
     { role: 'user', content: prompt }
   ];
 
+  // Verified fast and reliable model chain
   const models = [
-    { model: 'moonshotai/kimi-k3', key: keyKimi, params: { temperature: 1.0, max_tokens: 4096 } },
-    { model: 'nvidia/nemotron-3.5-lightning-30b-a3b', key: keyNemotron, params: { temperature: 1.0, max_tokens: 4096 } },
-    { model: 'nvidia/nemotron-3-ultra-550b-a55b', key: keyNemotron, params: { temperature: 1.0, max_tokens: 4096 } }
+    { model: 'nvidia/nemotron-3.5-lightning-30b-a3b', key: keyNemotron, params: { temperature: 0.7, max_tokens: 800 } },
+    { model: 'nvidia/nemotron-3-ultra-550b-a55b', key: keyNemotron, params: { temperature: 0.7, max_tokens: 800 } },
+    { model: 'moonshotai/kimi-k3', key: keyKimi, params: { temperature: 0.7, max_tokens: 800 } }
   ];
 
   for (const item of models) {
@@ -109,11 +150,12 @@ module.exports = async function handler(req, res) {
   const question = message.trim();
 
   const apiUrl = process.env.NVIDIA_API_URL || 'https://integrate.api.nvidia.com/v1/chat/completions';
-  const keyKimi = process.env.NVIDIA_API_KEY_KIMI;
-  const keyNemotron = process.env.NVIDIA_API_KEY_NEMOTRON;
+  const keyNemotron = (process.env.NVIDIA_API_KEY_NEMOTRON || '').trim();
+  const keyKimi = (process.env.NVIDIA_API_KEY_KIMI || '').trim();
+  const primaryKey = keyNemotron || keyKimi;
 
-  // 1. Memory extraction
-  const extracted = mockExtractMemories(question);
+  // 1. AI-Driven memory extraction (detect facts, tech choices, desires, preferences, milestones)
+  const extracted = await extractMemoriesWithAi(apiUrl, primaryKey, question);
   const existingMemories = getMemories();
   const learnedMemories = [];
 
@@ -143,8 +185,8 @@ module.exports = async function handler(req, res) {
   }
   promptText += `\nCurrent question:\n${question}`;
 
-  // 4. Generate Answer
-  const answer = await generateAnswerWithFallback(apiUrl, keyKimi, keyNemotron, promptText, question, selected);
+  // 4. Generate Answer with AI
+  const answer = await generateAnswerWithFallback(apiUrl, keyNemotron, keyKimi, promptText, question, selected);
 
   // 5. Update trace for live explainer
   setTrace({
@@ -165,4 +207,3 @@ module.exports = async function handler(req, res) {
     learnedMemories
   });
 };
-

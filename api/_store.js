@@ -141,7 +141,22 @@ function mockExtractMemories(text) {
 
   if (lower.includes("finished") || lower.includes("completed") || lower.includes("deployed") || lower.includes("participated in") || lower.includes("attended")) {
     list.push({ type: "EPISODIC", content: sanitize(text), importance: 2.0 });
-  } else if (lower.includes("decided to") || lower.includes("switched to") || lower.includes("prefer") || lower.includes("using") || lower.includes("stack is") || lower.includes("i know ") || lower.includes("we use")) {
+  } else if (
+    lower.includes("want to use") ||
+    lower.includes("decided to") ||
+    lower.includes("switched to") ||
+    lower.includes("switching to") ||
+    lower.includes("prefer") ||
+    lower.includes("using") ||
+    lower.includes("stack is") ||
+    lower.includes("i know ") ||
+    lower.includes("we use") ||
+    lower.includes("use ") ||
+    lower.includes("chosen") ||
+    lower.includes("chose ") ||
+    lower.includes("love ") ||
+    lower.includes("building")
+  ) {
     list.push({ type: "SEMANTIC", content: sanitize(text), importance: 2.5 });
   }
   return list;
