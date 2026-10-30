@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1b3b30">
+  <title>Sign in — MemoryChat</title>
+  <link rel="stylesheet" href="/auth/style.css">
+  <link rel="stylesheet" href="/auth/demo.css">
+<script src="/runtime-config.js"></script><script defer src="/auth/script.js"></script>
+</head>
+<body>
+  <main class="auth-shell">
+    <a class="brand" href="/">✦ memorychat<span>.</span></a>
+    <section class="auth-card" aria-labelledby="authTitle">
+      <p class="eyebrow">YOUR PRIVATE MEMORY SPACE</p>
+      <h1 id="authTitle">Welcome back.</h1>
+      <p class="intro" id="intro">Sign in to continue your conversation with context that belongs to you.</p>
+      <form id="authForm" novalidate>
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" minlength="3" maxlength="60" required placeholder="e.g. alex.dev">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters">
+        <p class="error" id="authError" role="alert"></p>
+        <button id="submitButton" type="submit">Sign in <span>↗</span></button>
+      </form>
+      <button type="button" id="demoLogin" class="demo-login">Try the demo account <span>↗</span></button>
+      <p class="switch"><span id="switchPrompt">New to MemoryChat?</span> <button type="button" id="switchMode">Create an account</button></p>
+    </section>
+    <p class="fine-print">Each account has its own private saved memories.</p>
+  </main>
+</body>
+</html>

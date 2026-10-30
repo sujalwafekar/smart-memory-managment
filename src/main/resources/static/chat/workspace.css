@@ -1,0 +1,26 @@
+/* Keep the desktop workspace inside the browser viewport. */
+html,body{height:100%;overflow:hidden}
+.app-layout{height:calc(100dvh - 34px);min-height:0}
+.sidebar,.chat-main{height:100%;min-height:0}
+.sidebar-content{display:flex;flex-direction:column;overflow:hidden}
+.memory-list{flex:1;min-height:0;max-height:none}
+.memory-search{width:100%;margin:0 0 12px;padding:10px 12px;border:1px solid #dce3d7;border-radius:8px;background:#fff;color:#24372d;font-size:12px;outline:0}
+.memory-search:focus{border-color:#4a9568;box-shadow:0 0 0 3px #dcecdf}
+.memory-actions{display:flex;align-items:center;gap:8px}.edit-memory,.delete-memory{border:0;background:none;padding:0;font-size:10px}.edit-memory{color:#376d4d}.edit-memory:hover,.edit-memory:focus-visible{color:#1b3b30;text-decoration:underline}
+.chat-main{overflow:hidden}
+.thread{min-height:0;max-height:none;overflow-y:auto}
+.selected-memories-box{margin-top:12px;padding:12px;background:#f1f6ee;border:1px solid #cbdcc8;border-radius:10px;color:#244631}
+.memory-reveal{margin-top:12px;padding:0;border:0;background:none;color:#376d4d;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.memory-reveal:hover,.memory-reveal:focus-visible{text-decoration:underline;color:#1b3b30}
+.selected-memories-box strong{font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.selected-memories-copy{margin:5px 0 9px!important;font-size:11px!important;line-height:1.45!important;color:#617569!important}
+.selected-memories-list{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.selected-memory-item{display:flex;gap:8px;align-items:flex-start;padding:8px 9px;background:#fff;border:1px solid #deeadb;border-radius:7px;font-size:11px;line-height:1.45}
+.selected-memory-type{flex:none;padding:2px 5px;border-radius:4px;background:#e0efe0;color:#26633d;font-size:9px;font-weight:700;letter-spacing:.04em}
+.selected-memory-type.EPISODIC{background:#f4e7e4;color:#a15c51}.selected-memory-type.WORKING{background:#eae5f3;color:#705a93}.selected-memory-type.ARCHIVE{background:#f4ecd8;color:#84672c}
+.selected-memory-content{color:#40534a}
+
+@media(max-width:900px){
+  .app-layout{height:100dvh;min-height:0}
+  .chat-main{height:100dvh;min-height:0}
+  .thread{max-height:none}
+}

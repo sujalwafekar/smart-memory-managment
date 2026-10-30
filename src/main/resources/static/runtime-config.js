@@ -1,0 +1,1 @@
+window.MEMORYCHAT_API_URL = window.MEMORYCHAT_API_URL || '';
