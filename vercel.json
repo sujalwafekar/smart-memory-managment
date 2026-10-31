@@ -6,5 +6,19 @@
       "source": "/api/:path*",
       "destination": "https://memorychat-api.onrender.com/api/:path*"
     }
+  ],
+  "headers": [
+    {
+      "source": "/auth/script.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
+      "source": "/chat/script.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
+      "source": "/runtime-config.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
   ]
 }
