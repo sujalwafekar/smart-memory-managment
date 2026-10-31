@@ -224,7 +224,7 @@ chatForm.addEventListener('submit',async event=>{
     await loadMemories();
   } catch(error) {
     pending.remove();
-    appendMessage('assistant',`I couldn't reach the chat backend: ${error.message}. Please start Spring Boot and MySQL, then try again.`);
+    appendMessage('assistant',`I couldn't complete that request: ${error.message}. Please try again in a moment.`);
     showStatus('The chat API could not be reached.');
   } finally {sending=false;sendButton.disabled=false;chatInput.focus();}
 });

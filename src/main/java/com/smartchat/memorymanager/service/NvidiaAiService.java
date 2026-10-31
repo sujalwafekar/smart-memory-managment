@@ -108,8 +108,8 @@ public class NvidiaAiService implements AiService {
             }
         }
 
-        log.warn("NVIDIA could not generate an answer. Encountered: {}", errors);
-        throw new IllegalStateException("NVIDIA could not generate an answer.");
+        log.warn("NVIDIA could not generate an answer. Using the local contextual fallback. Encountered: {}", errors);
+        return fallbackMockService.generate(question, selectedMemories, prompt);
     }
 
     @Override

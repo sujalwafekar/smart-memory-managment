@@ -28,7 +28,7 @@ public class MockAiService implements AiService {
         }
 
         if (!selectedMemories.isEmpty()) {
-            return "I found " + selectedMemories.size() + " relevant stored memor" + (selectedMemories.size() == 1 ? "y" : "ies") + " and used them as context. The backend explainer shows exactly which memories were selected and why.";
+            return "I found " + selectedMemories.size() + " relevant stored memor" + (selectedMemories.size() == 1 ? "y" : "ies") + " and used them as context.";
         }
 
         return "I could not find a strongly relevant stored memory for that question. I can still answer, but this demo intentionally avoids injecting unrelated context.";
