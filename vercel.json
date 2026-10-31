@@ -2,6 +2,9 @@
   "version": 2,
   "outputDirectory": "src/main/resources/static",
   "rewrites": [
-    { "source": "/runtime-config.js", "destination": "/api/runtime-config" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://memorychat-api.onrender.com/api/:path*"
+    }
   ]
 }
