@@ -37,21 +37,43 @@ public class MockAiService implements AiService {
     @Override
     public List<ExtractedMemory> extractMemories(String userMessage) {
         if (userMessage == null || userMessage.isBlank()) return List.of();
-        String lower = userMessage.toLowerCase(Locale.ROOT);
+        String candidate = userMessage.trim();
+        String lower = candidate.toLowerCase(Locale.ROOT);
         List<ExtractedMemory> list = new ArrayList<>();
 
-        // Detect episodic milestones (events completed)
+        // Do not turn ordinary questions into saved facts unless the user explicitly asks us to remember one.
+        boolean explicitlyRemembered = lower.startsWith("remember ") || lower.startsWith("please remember ") || lower.startsWith("save ");
+        if (candidate.endsWith("?") && !explicitlyRemembered) return List.of();
+
+        if (explicitlyRemembered) {
+            String fact = candidate.replaceFirst("(?i)^(please\\s+)?(remember|save)(\\s+that)?\\s+", "");
+            if (!fact.isBlank()) {
+                list.add(new ExtractedMemory(classifyMemoryType(fact.toLowerCase(Locale.ROOT)), formatAsFact(fact), 3.0));
+            }
+            return list;
+        }
+
+        // Detect episodic milestones (events completed).
         if (lower.contains("finished") || lower.contains("completed") || lower.contains("deployed") || lower.contains("participated in") || lower.contains("attended")) {
-            String sanitized = formatAsFact(userMessage);
+            String sanitized = formatAsFact(candidate);
             list.add(new ExtractedMemory(MemoryType.EPISODIC, sanitized, 2.0));
         }
-        // Detect semantic decisions/preferences/tech stack
-        else if (lower.contains("decided to") || lower.contains("switched to") || lower.contains("prefer") || lower.contains("using") || lower.contains("stack is") || lower.contains("i know ") || lower.contains("we use")) {
-            String sanitized = formatAsFact(userMessage);
-            list.add(new ExtractedMemory(MemoryType.SEMANTIC, sanitized, 2.5));
+        // Detect project facts, preferences, technology choices, and profile details.
+        else if (lower.contains("decided to") || lower.contains("switched to") || lower.contains("prefer") || lower.contains("using") || lower.contains("stack is") || lower.contains("i know ") || lower.contains("we use") || lower.contains("i use") || lower.contains("my project") || lower.contains("our project") || lower.contains("my name is") || lower.startsWith("i am ") || lower.startsWith("i'm ") || lower.startsWith("we are ")) {
+            list.add(new ExtractedMemory(MemoryType.SEMANTIC, formatAsFact(candidate), 2.5));
+        }
+        // Detect active tasks that are useful in the current conversation but may change later.
+        else if (lower.contains("working on") || lower.contains("building ") || lower.contains("planning to") || lower.contains("we need") || lower.contains("i need")) {
+            list.add(new ExtractedMemory(MemoryType.WORKING, formatAsFact(candidate), 2.0));
         }
 
         return list;
+    }
+
+    private MemoryType classifyMemoryType(String fact) {
+        if (fact.contains("finished") || fact.contains("completed") || fact.contains("deployed")) return MemoryType.EPISODIC;
+        if (fact.contains("working on") || fact.contains("building") || fact.contains("need") || fact.contains("plan")) return MemoryType.WORKING;
+        return MemoryType.SEMANTIC;
     }
 
     private String formatAsFact(String text) {
