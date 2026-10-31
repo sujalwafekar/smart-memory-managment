@@ -24,6 +24,9 @@ public class Memory {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(nullable = false)
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
     @JsonIgnore
@@ -48,6 +51,19 @@ public class Memory {
     public void setImportance(Double importance) { this.importance = importance; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public AppUser getOwner() { return owner; }
     public void setOwner(AppUser owner) { this.owner = owner; }
+
+    @PrePersist
+    void setInitialTimestamp() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    void setUpdatedTimestamp() {
+        updatedAt = LocalDateTime.now();
+    }
 }

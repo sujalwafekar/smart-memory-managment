@@ -45,10 +45,15 @@ function make(tag, cls, text) {
 function renderMemories() {
   memoryList.replaceChildren();
   $('#memoryCount').textContent = memories.length;
-  const shown = memories.filter(memory => {
-    const matchesType = currentFilter === 'ALL' || memory.type === currentFilter;
+  const shown = [...memories].filter(memory => {
+    const matchesType = currentFilter === 'ALL' || currentFilter === 'RECENT' || memory.type === currentFilter;
     const searchableText = `${memory.type} ${memory.content}`.toLowerCase();
     return matchesType && searchableText.includes(memorySearchTerm);
+  }).sort((first, second) => {
+    if (currentFilter === 'RECENT') {
+      return new Date(second.updatedAt ?? second.createdAt) - new Date(first.updatedAt ?? first.createdAt);
+    }
+    return 0;
   });
   if (!shown.length) {
     memoryList.append(make('p','empty-sidebar',memories.length ? 'No memories in this category.' : 'No memories yet. Add one to get started.'));
@@ -72,7 +77,8 @@ function renderMemories() {
     card.append(head,make('p','',memory.content));
     const foot = make('div','memory-bottom');
     foot.append(make('span','',`Importance ${Number(memory.importance ?? 1).toFixed(1)}/5`));
-    if (memory.createdAt) foot.append(make('span','',new Date(memory.createdAt).toLocaleDateString()));
+    const timestamp = currentFilter === 'RECENT' ? (memory.updatedAt ?? memory.createdAt) : memory.createdAt;
+    if (timestamp) foot.append(make('span','',new Date(timestamp).toLocaleDateString()));
     card.append(foot);
     memoryList.append(card);
   });
