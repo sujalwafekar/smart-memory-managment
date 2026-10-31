@@ -78,9 +78,16 @@ public class MockAiService implements AiService {
 
     private String formatAsFact(String text) {
         String trimmed = text.trim();
-        if (trimmed.toLowerCase(Locale.ROOT).startsWith("i ")) {
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("i am ")) {
+            return "User is " + trimmed.substring(5);
+        } else if (lower.startsWith("i'm ")) {
+            return "User is " + trimmed.substring(4);
+        } else if (lower.startsWith("i ")) {
             return "User " + trimmed.substring(2);
-        } else if (trimmed.toLowerCase(Locale.ROOT).startsWith("we ")) {
+        } else if (lower.startsWith("we are ")) {
+            return "User and team are " + trimmed.substring(7);
+        } else if (lower.startsWith("we ")) {
             return "User and team " + trimmed.substring(3);
         }
         return "User: " + trimmed;
