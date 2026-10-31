@@ -60,7 +60,7 @@ public class NvidiaAiService implements AiService {
     @Override
     public String generate(String question, List<ScoredMemory> selectedMemories, String prompt) {
         List<Map<String, String>> messages = List.of(
-            Map.of("role", "system", "content", "You are MemoryChat, an intelligent AI assistant. Use the provided user context to tailor your response."),
+            Map.of("role", "system", "content", "You are MemoryChat, an intelligent AI assistant. Use the provided user context to tailor your response. Reply in plain text only: no Markdown headings, bold markers, backticks, code fences, source code, or code comments."),
             Map.of("role", "user", "content", prompt)
         );
 

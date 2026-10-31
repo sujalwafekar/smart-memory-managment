@@ -50,7 +50,7 @@ public class GeminiAiService implements AiService {
         if (!apiKey.isBlank()) {
             try {
                 Map<String, Object> body = Map.of(
-                        "systemInstruction", Map.of("parts", List.of(Map.of("text", "You are MemoryChat. Give a direct, useful answer. Use relevant saved context quietly; never mention memory selection unless the user asks."))),
+                        "systemInstruction", Map.of("parts", List.of(Map.of("text", "You are MemoryChat. Give a direct, useful answer in plain text. Do not use Markdown headings, bold markers, backticks, code fences, source code, or code comments. Use relevant saved context quietly; never mention memory selection unless the user asks."))),
                         "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))),
                         "generationConfig", Map.of("temperature", 0.7, "maxOutputTokens", 1024)
                 );

@@ -157,12 +157,20 @@ $('#memoryForm').addEventListener('submit',async event => {
   finally {$('#saveMemory').disabled=false;}
 });
 function scrollDown() {thread.scrollTop = thread.scrollHeight;}
+function cleanAssistantText(text) {
+  return String(text)
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/```[^\n]*\n?/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/^\s*\/\/\s?/gm, '');
+}
 function appendMessage(role,text,relevant = []) {
   welcome?.remove();
   const row = make('div',`message-row ${role}`);
   if (role==='assistant') row.append(make('div','message-avatar','✳'));
   const bubble=make('div','message-bubble');
-  bubble.append(make('p','',text));
+  bubble.append(make('p','',role === 'assistant' ? cleanAssistantText(text) : text));
   if (role==='assistant') {
     if (relevant && relevant.length) {
       const reveal = make('button', 'memory-reveal', `Show memories used (${relevant.length})`);
