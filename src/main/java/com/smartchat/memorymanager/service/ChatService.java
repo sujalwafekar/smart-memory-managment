@@ -3,6 +3,7 @@ package com.smartchat.memorymanager.service;
 import com.smartchat.memorymanager.dto.*;
 import com.smartchat.memorymanager.model.Memory;
 import com.smartchat.memorymanager.model.AppUser;
+import com.smartchat.memorymanager.model.Conversation;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,19 +13,25 @@ public class ChatService {
     private final MemoryService memoryService;
     private final RelevanceService relevanceService;
     private final AiService aiService;
+    private final ConversationService conversationService;
 
     public ChatService(MemoryService memoryService,
                        RelevanceService relevanceService,
-                       AiService aiService) {
+                       AiService aiService,
+                       ConversationService conversationService) {
         this.memoryService = memoryService;
         this.relevanceService = relevanceService;
         this.aiService = aiService;
+        this.conversationService = conversationService;
     }
 
-    public ChatResponse chat(String question, AppUser user) {
+    public ChatResponse chat(String question, Long conversationId, AppUser user) {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("Message cannot be empty");
         }
+
+        Conversation conversation = conversationService.getOrCreate(conversationId, user);
+        conversationService.addMessage(conversation, "user", question.trim());
 
         // 1. AI-Driven memory extraction (detect facts, tech stack decisions, preferences, milestones)
         List<ExtractedMemory> extracted = aiService.extractMemories(question);
@@ -48,8 +55,9 @@ public class ChatService {
         List<ScoredMemory> selected = scored.stream().filter(ScoredMemory::selected).toList();
         String prompt = buildPrompt(question, selected);
         String answer = aiService.generate(question, selected, prompt);
+        conversationService.addMessage(conversation, "assistant", answer);
 
-        return new ChatResponse(answer, keywords, selected, learnedMemories);
+        return new ChatResponse(answer, keywords, selected, learnedMemories, conversation.getId());
     }
 
     private String buildPrompt(String question, List<ScoredMemory> selected) {

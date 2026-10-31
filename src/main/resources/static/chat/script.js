@@ -1,6 +1,7 @@
 'use strict';
 const $ = (selector) => document.querySelector(selector);
 const memoryList = $('#memoryList');
+const conversationList = $('#conversationList');
 const thread = $('#thread');
 const welcome = $('#welcome');
 const chatInput = $('#chatInput');
@@ -10,6 +11,8 @@ const apiStatus = $('#apiStatus');
 const memoryDialog = $('#memoryDialog');
 const apiBase = (window.MEMORYCHAT_API_URL || '').replace(/\/$/, '');
 let memories = [];
+let conversations = [];
+let activeConversationId = null;
 let currentFilter = 'ALL';
 let memorySearchTerm = '';
 let editingMemoryId = null;
@@ -41,6 +44,38 @@ function make(tag, cls, text) {
   if (cls) element.className = cls;
   if (text !== undefined) element.textContent = text;
   return element;
+}
+function renderConversations() {
+  conversationList.replaceChildren();
+  if (!conversations.length) {
+    conversationList.append(make('p', 'empty-sidebar', 'No conversations yet.'));
+    return;
+  }
+  conversations.slice(0, 6).forEach(conversation => {
+    const item = make('button', `conversation-item${conversation.id === activeConversationId ? ' active' : ''}`);
+    item.type = 'button';
+    item.append(make('span', 'conversation-title', conversation.title));
+    if (conversation.updatedAt) item.append(make('span', 'conversation-time', new Date(conversation.updatedAt).toLocaleDateString()));
+    item.addEventListener('click', () => openConversation(conversation.id));
+    conversationList.append(item);
+  });
+}
+async function loadConversations() {
+  try {
+    const fresh = await apiFetch('/api/conversations?t=' + Date.now());
+    if (Array.isArray(fresh)) { conversations = fresh; renderConversations(); }
+  } catch (error) { conversationList.replaceChildren(make('p', 'empty-sidebar', 'Conversations are unavailable.')); }
+}
+async function openConversation(id) {
+  try {
+    const conversation = await apiFetch(`/api/conversations/${id}`);
+    activeConversationId = conversation.id;
+    thread.replaceChildren();
+    conversation.messages.forEach(message => appendMessage(message.role, message.content));
+    if (!conversation.messages.length) thread.append(welcome);
+    renderConversations();
+    closeSidebar();
+  } catch (error) { showStatus(error.message); }
 }
 function renderMemories() {
   memoryList.replaceChildren();
@@ -224,10 +259,12 @@ chatForm.addEventListener('submit',async event=>{
   appendMessage('user',message);
   const pending=appendMessage('assistant','Thinking through your saved memories…',[]);
   try {
-    const response=await apiFetch('/api/chat',{method:'POST',body:JSON.stringify({message})});
+    const response=await apiFetch('/api/chat',{method:'POST',body:JSON.stringify({message,conversationId:activeConversationId})});
     pending.remove();
+    activeConversationId = response.conversationId ?? activeConversationId;
     appendMessage('assistant', response.answer ?? 'No response received.', response.relevantMemories ?? []);
     await loadMemories();
+    await loadConversations();
   } catch(error) {
     pending.remove();
     appendMessage('assistant',`I couldn't complete that request: ${error.message}. Please try again in a moment.`);
@@ -235,11 +272,13 @@ chatForm.addEventListener('submit',async event=>{
   } finally {sending=false;sendButton.disabled=false;chatInput.focus();}
 });
 $('#newChat').addEventListener('click',()=>{
+  activeConversationId = null;
   thread.replaceChildren();
   thread.append(welcome);
   // Removed welcome is still referenced; reusing it restores the original empty state.
   closeSidebar();
   showStatus('');
+  renderConversations();
   chatInput.focus();
 });
 $('#signOut').addEventListener('click', () => {
@@ -253,5 +292,6 @@ document.querySelectorAll('[data-question]').forEach(button=>button.addEventList
   chatForm.requestSubmit();
 }));
 loadMemories();
+loadConversations();
 setInterval(loadMemories, 3000);
 window.addEventListener('focus', loadMemories);

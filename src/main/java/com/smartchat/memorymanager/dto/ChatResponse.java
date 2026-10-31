@@ -6,9 +6,10 @@ public record ChatResponse(
         String answer,
         List<String> keywords,
         List<ScoredMemory> relevantMemories,
-        List<String> learnedMemories
+        List<String> learnedMemories,
+        Long conversationId
 ) {
     public ChatResponse(String answer, List<String> keywords, List<ScoredMemory> relevantMemories) {
-        this(answer, keywords, relevantMemories, List.of());
+        this(answer, keywords, relevantMemories, List.of(), null);
     }
 }

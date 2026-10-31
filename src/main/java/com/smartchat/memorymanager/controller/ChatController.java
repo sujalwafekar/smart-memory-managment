@@ -18,6 +18,6 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest request, Authentication authentication) {
-        return ResponseEntity.ok(chatService.chat(request.getMessage(), (com.smartchat.memorymanager.model.AppUser) authentication.getPrincipal()));
+        return ResponseEntity.ok(chatService.chat(request.getMessage(), request.getConversationId(), (com.smartchat.memorymanager.model.AppUser) authentication.getPrincipal()));
     }
 }
