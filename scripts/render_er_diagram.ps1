@@ -1,57 +1,113 @@
 Add-Type -AssemblyName System.Drawing
 
-$canvas = [System.Drawing.Bitmap]::new(1600, 950)
+$canvas = [System.Drawing.Bitmap]::new(1800, 1120)
 $graphics = [System.Drawing.Graphics]::FromImage($canvas)
 $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$graphics.Clear([System.Drawing.Color]::FromArgb(246, 248, 243))
+$graphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
+$graphics.Clear([System.Drawing.Color]::White)
 
-$green = [System.Drawing.Color]::FromArgb(27, 107, 75)
-$dark = [System.Drawing.Color]::FromArgb(36, 55, 45)
-$muted = [System.Drawing.Color]::FromArgb(92, 115, 101)
-$border = [System.Drawing.Pen]::new($green, 4)
-$connector = [System.Drawing.Pen]::new($green, 4)
-$titleFont = [System.Drawing.Font]::new('Arial', 34, [System.Drawing.FontStyle]::Bold)
-$subFont = [System.Drawing.Font]::new('Arial', 17)
-$headFont = [System.Drawing.Font]::new('Arial', 23, [System.Drawing.FontStyle]::Bold)
-$bodyFont = [System.Drawing.Font]::new('Consolas', 17)
-$labelFont = [System.Drawing.Font]::new('Arial', 18, [System.Drawing.FontStyle]::Bold)
-$brushDark = [System.Drawing.SolidBrush]::new($dark)
-$brushGreen = [System.Drawing.SolidBrush]::new($green)
-$brushMuted = [System.Drawing.SolidBrush]::new($muted)
-$brushWhite = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::White)
+$black = [System.Drawing.Color]::Black
+$line = [System.Drawing.Pen]::new($black, 3)
+$thin = [System.Drawing.Pen]::new($black, 2)
+$brush = [System.Drawing.SolidBrush]::new($black)
+$titleFont = [System.Drawing.Font]::new('Times New Roman', 32, [System.Drawing.FontStyle]::Bold)
+$noteFont = [System.Drawing.Font]::new('Times New Roman', 17)
+$entityFont = [System.Drawing.Font]::new('Times New Roman', 23, [System.Drawing.FontStyle]::Bold)
+$attributeFont = [System.Drawing.Font]::new('Times New Roman', 17)
+$relationFont = [System.Drawing.Font]::new('Times New Roman', 20, [System.Drawing.FontStyle]::Bold)
+$cardinalityFont = [System.Drawing.Font]::new('Times New Roman', 18, [System.Drawing.FontStyle]::Bold)
 
-$graphics.DrawString('MemoryChat - Entity Relationship Diagram', $titleFont, $brushDark, 100, 72)
-$graphics.DrawString('MySQL schema: one user owns zero or many saved memories', $subFont, $brushMuted, 102, 125)
+function Center-Text($text, $font, $x, $y, $width, $height) {
+    $format = [System.Drawing.StringFormat]::new()
+    $format.Alignment = [System.Drawing.StringAlignment]::Center
+    $format.LineAlignment = [System.Drawing.StringAlignment]::Center
+    $graphics.DrawString($text, $font, $brush, [System.Drawing.RectangleF]::new($x, $y, $width, $height), $format)
+    $format.Dispose()
+}
 
-function Draw-Entity($x, $y, $width, $height, $name, $fields) {
-    $graphics.FillRectangle($brushWhite, $x, $y, $width, $height)
-    $graphics.DrawRectangle($border, $x, $y, $width, $height)
-    $graphics.FillRectangle($brushGreen, $x, $y, $width, 62)
-    $graphics.DrawString($name, $headFont, $brushWhite, $x + 24, $y + 17)
-    $fieldY = $y + 94
-    foreach ($field in $fields) {
-        $graphics.DrawString($field, $bodyFont, $brushDark, $x + 25, $fieldY)
-        $fieldY += 42
+function Draw-Entity($name, $x, $y, $width, $height) {
+    $graphics.DrawRectangle($line, $x, $y, $width, $height)
+    Center-Text $name $entityFont $x $y $width $height
+}
+
+function Draw-Attribute($name, $x, $y, $width, $height, $isKey) {
+    $graphics.DrawEllipse($thin, $x, $y, $width, $height)
+    Center-Text $name $attributeFont $x $y $width $height
+    if ($isKey) {
+        $size = $graphics.MeasureString($name, $attributeFont)
+        $startX = $x + ($width - $size.Width) / 2
+        $baseline = $y + $height / 2 + $size.Height / 2 + 2
+        $graphics.DrawLine($thin, $startX, $baseline, $startX + $size.Width, $baseline)
     }
 }
 
-Draw-Entity 130 255 470 310 'APP_USERS' @('PK  id : BIGINT, AUTO_INCREMENT', 'username : VARCHAR(60), UNIQUE', 'password : VARCHAR(255)', 'created_at : DATETIME')
-Draw-Entity 970 195 500 430 'MEMORIES' @('PK  id : BIGINT, AUTO_INCREMENT', 'type : VARCHAR(20)', 'content : TEXT', 'importance : DOUBLE', 'created_at : DATETIME', 'FK  owner_id : BIGINT')
+function Draw-Relationship($name, $centerX, $centerY, $size) {
+    $half = $size / 2
+    $points = [System.Drawing.PointF[]]@(
+        [System.Drawing.PointF]::new($centerX, $centerY - $half),
+        [System.Drawing.PointF]::new($centerX + $half, $centerY),
+        [System.Drawing.PointF]::new($centerX, $centerY + $half),
+        [System.Drawing.PointF]::new($centerX - $half, $centerY)
+    )
+    $graphics.DrawPolygon($line, $points)
+    Center-Text $name $relationFont ($centerX - $half) ($centerY - 24) $size 48
+}
 
-$graphics.DrawLine($connector, 600, 410, 970, 410)
-$graphics.DrawLine($connector, 615, 390, 615, 430)
-$graphics.DrawLine($connector, 635, 390, 635, 430)
-$graphics.DrawLine($connector, 930, 378, 970, 410)
-$graphics.DrawLine($connector, 930, 442, 970, 410)
-$graphics.DrawLine($connector, 930, 410, 970, 410)
-$graphics.DrawString('owns', $labelFont, $brushGreen, 740, 365)
-$graphics.DrawString('1', $labelFont, $brushGreen, 630, 455)
-$graphics.DrawString('0..*', $labelFont, $brushGreen, 900, 455)
-$graphics.DrawString('Relationship: APP_USERS.id -> MEMORIES.owner_id', $subFont, $brushDark, 500, 725)
-$graphics.DrawString('The foreign key ensures that each saved memory belongs to one authenticated user.', $subFont, $brushMuted, 390, 765)
+$graphics.DrawString('MemoryChat - Entity Relationship Diagram', $titleFont, $brush, 500, 46)
+$graphics.DrawString('Chen notation: entities, attributes, relationship, and cardinality', $noteFont, $brush, 545, 95)
 
-$output = Join-Path $PSScriptRoot '..\diagrams\MemoryChat_ER_Diagram.png'
+# Connectors are drawn first so symbols stay clear and readable.
+$graphics.DrawLine($line, 630, 520, 790, 520)
+$graphics.DrawLine($line, 1010, 520, 1170, 520)
+
+# APP_USERS attributes.
+$graphics.DrawLine($thin, 420, 410, 390, 245)
+$graphics.DrawLine($thin, 310, 460, 160, 385)
+$graphics.DrawLine($thin, 300, 570, 155, 650)
+$graphics.DrawLine($thin, 430, 630, 395, 810)
+
+# MEMORIES attributes.
+$graphics.DrawLine($thin, 1360, 410, 1390, 245)
+$graphics.DrawLine($thin, 1470, 460, 1630, 385)
+$graphics.DrawLine($thin, 1480, 570, 1640, 570)
+$graphics.DrawLine($thin, 1365, 630, 1400, 805)
+$graphics.DrawLine($thin, 1260, 630, 1145, 755)
+$graphics.DrawLine($thin, 1470, 600, 1610, 710)
+
+Draw-Entity 'APP_USERS' 310 410 320 220
+Draw-Entity 'MEMORIES' 1170 410 320 220
+Draw-Relationship 'OWNS' 900 520 220
+
+Draw-Attribute 'User ID (PK)' 285 150 210 70 $true
+Draw-Attribute 'Username' 35 345 200 70 $false
+Draw-Attribute 'Password' 30 615 205 70 $false
+Draw-Attribute 'Created At' 290 805 210 70 $false
+
+Draw-Attribute 'Memory ID (PK)' 1285 150 220 70 $true
+Draw-Attribute 'Type' 1555 345 150 70 $false
+Draw-Attribute 'Content' 1560 535 190 70 $false
+Draw-Attribute 'Importance' 1310 800 205 70 $false
+Draw-Attribute 'Created At' 1035 730 205 70 $false
+Draw-Attribute 'Owner ID (FK)' 1540 690 220 70 $false
+
+Center-Text '1' $cardinalityFont 685 488 45 40
+Center-Text 'N' $cardinalityFont 1070 488 45 40
+$graphics.DrawString('One user can own many saved memories.', $noteFont, $brush, 635, 1015)
+$graphics.DrawString('Each memory record belongs to exactly one authenticated user.', $noteFont, $brush, 540, 1045)
+
+$output = Join-Path $PSScriptRoot '..\diagrams\MemoryChat_Chen_ER_Diagram.png'
 $canvas.Save($output, [System.Drawing.Imaging.ImageFormat]::Png)
+
+$line.Dispose()
+$thin.Dispose()
+$brush.Dispose()
+$titleFont.Dispose()
+$noteFont.Dispose()
+$entityFont.Dispose()
+$attributeFont.Dispose()
+$relationFont.Dispose()
+$cardinalityFont.Dispose()
 $graphics.Dispose()
 $canvas.Dispose()
+
 Write-Output $output
